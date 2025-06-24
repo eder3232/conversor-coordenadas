@@ -24,6 +24,21 @@ import {
   CheckCircle,
   Loader2,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 export function UTMConverter() {
   const [state, send] = useActor(utmConverterMachine)
@@ -213,28 +228,27 @@ export function UTMConverter() {
           <CardContent>
             <div className="space-y-4">
               <div className="overflow-x-auto rounded-lg border">
-                <table className="min-w-full text-xs font-mono">
-                  <thead>
-                    <tr>
+                <Table className="min-w-full text-xs font-mono">
+                  <TableHeader>
+                    <TableRow>
                       {Array.from({ length: columns }).map((_, colIdx) => (
-                        <th key={colIdx} className="p-2 bg-muted">
-                          <select
-                            className="border rounded px-1 py-0.5 text-xs"
+                        <TableHead key={colIdx} className="p-2 bg-muted">
+                          <Select
                             value={
                               selectedX === colIdx
                                 ? 'x'
                                 : selectedY === colIdx
                                 ? 'y'
-                                : ''
+                                : undefined
                             }
-                            onChange={(e) => {
-                              if (e.target.value === 'x') {
+                            onValueChange={(value) => {
+                              if (value === 'x') {
                                 // Si otra columna ya era X, la desasigna
                                 handleMapColumns(
                                   colIdx,
                                   selectedY === colIdx ? -1 : selectedY ?? -1
                                 )
-                              } else if (e.target.value === 'y') {
+                              } else if (value === 'y') {
                                 // Si otra columna ya era Y, la desasigna
                                 handleMapColumns(
                                   selectedX === colIdx ? -1 : selectedX ?? -1,
@@ -249,26 +263,33 @@ export function UTMConverter() {
                               }
                             }}
                           >
-                            <option value="">Sin asignar</option>
-                            <option value="x">Este (X)</option>
-                            <option value="y">Norte (Y)</option>
-                          </select>
-                        </th>
+                            <SelectTrigger className="border rounded px-1 py-0.5 text-xs h-6">
+                              <SelectValue placeholder="Sin asignar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="x">Este (X)</SelectItem>
+                              <SelectItem value="y">Norte (Y)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableHead>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {context.parsedData.slice(0, 8).map((row, rowIdx) => (
-                      <tr key={rowIdx}>
+                      <TableRow key={rowIdx}>
                         {row.map((cell, colIdx) => (
-                          <td key={colIdx} className="p-2 border-t text-center">
+                          <TableCell
+                            key={colIdx}
+                            className="p-2 border-t text-center"
+                          >
                             {cell}
-                          </td>
+                          </TableCell>
                         ))}
-                      </tr>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {context.parsedData.length > 8 && (
                   <div className="text-xs text-muted-foreground mt-1">
                     ... y {context.parsedData.length - 8} filas más
@@ -305,49 +326,63 @@ export function UTMConverter() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium">Zona UTM</label>
-                  <select
-                    className="w-full mt-1 p-2 border rounded-md"
-                    value={context.utmZone || ''}
-                    onChange={(e) => handleSetUTMZone(parseInt(e.target.value))}
+                  <Select
+                    value={context.utmZone?.toString() || undefined}
+                    onValueChange={(value) => handleSetUTMZone(parseInt(value))}
                   >
-                    <option value="">Selecciona zona</option>
-                    {Array.from({ length: 60 }, (_, i) => i + 1).map((zone) => (
-                      <option key={zone} value={zone}>
-                        Zona {zone}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Selecciona zona" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 60 }, (_, i) => i + 1).map(
+                        (zone) => (
+                          <SelectItem key={zone} value={zone.toString()}>
+                            Zona {zone}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">Hemisferio</label>
-                  <select
-                    className="w-full mt-1 p-2 border rounded-md"
-                    value={context.hemisphere || ''}
-                    onChange={(e) =>
-                      handleSetHemisphere(e.target.value as 'N' | 'S')
+                  <Select
+                    value={context.hemisphere || undefined}
+                    onValueChange={(value) =>
+                      handleSetHemisphere(value as 'N' | 'S')
                     }
                   >
-                    <option value="">Selecciona hemisferio</option>
-                    <option value="N">Norte (N)</option>
-                    <option value="S">Sur (S)</option>
-                  </select>
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Selecciona hemisferio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="N">Norte (N)</SelectItem>
+                      <SelectItem value="S">Sur (S)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">
                     Formato de Salida
                   </label>
-                  <select
-                    className="w-full mt-1 p-2 border rounded-md"
+                  <Select
                     value={context.outputFormat}
-                    onChange={(e) =>
-                      handleSetOutputFormat(e.target.value as 'decimal' | 'dms')
+                    onValueChange={(value) =>
+                      handleSetOutputFormat(value as 'decimal' | 'dms')
                     }
                   >
-                    <option value="decimal">Decimal</option>
-                    <option value="dms">Grados, Minutos, Segundos</option>
-                  </select>
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Selecciona formato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="decimal">Decimal</SelectItem>
+                      <SelectItem value="dms">
+                        Grados, Minutos, Segundos
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
