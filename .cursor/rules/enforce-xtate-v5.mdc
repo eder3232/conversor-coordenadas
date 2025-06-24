@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When using XState for state management, always use version 5 or higher. XState v5 introduces significant improvements including better TypeScript support, simplified API, and enhanced performance. Avoid using older versions (v4 and below) in new implementations.
+
+Applies to: JavaScript/TypeScript files that import or use XState

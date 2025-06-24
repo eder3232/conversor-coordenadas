@@ -41,6 +41,11 @@ export function UTMConverter() {
   const isCopying = state.matches('copying')
   const isError = state.matches('error')
 
+  console.log({
+    isParameterInput,
+    isReadyToConvert,
+  })
+
   // Contexto de la máquina
   const context = state.context
 
@@ -190,78 +195,86 @@ export function UTMConverter() {
     }
 
     if (isColumnMapping) {
+      // Número de columnas detectadas
+      const columns = context.parsedData[0]?.length || 0
+      // Estado local para saber qué columna es X y cuál es Y
+      const selectedX = context.columnMapping.x
+      const selectedY = context.columnMapping.y
+
       return (
         <Card className="w-full max-w-4xl mx-auto">
           <CardHeader>
             <CardTitle>Mapeo de Columnas</CardTitle>
             <CardDescription>
-              Selecciona las columnas que contienen las coordenadas X e Y
+              Selecciona en los encabezados qué columna corresponde a Este (X) y
+              Norte (Y)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Vista Previa de Datos</h4>
-                <div className="text-sm text-muted-foreground">
-                  {context.totalRows} filas detectadas
-                </div>
-                {context.parsedData.slice(0, 5).map((row, index) => (
-                  <div key={index} className="text-xs font-mono mt-1">
-                    {row.join(' | ')}
-                  </div>
-                ))}
-                {context.parsedData.length > 5 && (
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="min-w-full text-xs font-mono">
+                  <thead>
+                    <tr>
+                      {Array.from({ length: columns }).map((_, colIdx) => (
+                        <th key={colIdx} className="p-2 bg-muted">
+                          <select
+                            className="border rounded px-1 py-0.5 text-xs"
+                            value={
+                              selectedX === colIdx
+                                ? 'x'
+                                : selectedY === colIdx
+                                ? 'y'
+                                : ''
+                            }
+                            onChange={(e) => {
+                              if (e.target.value === 'x') {
+                                // Si otra columna ya era X, la desasigna
+                                handleMapColumns(
+                                  colIdx,
+                                  selectedY === colIdx ? -1 : selectedY ?? -1
+                                )
+                              } else if (e.target.value === 'y') {
+                                // Si otra columna ya era Y, la desasigna
+                                handleMapColumns(
+                                  selectedX === colIdx ? -1 : selectedX ?? -1,
+                                  colIdx
+                                )
+                              } else {
+                                // Si se selecciona "Sin asignar"
+                                handleMapColumns(
+                                  selectedX === colIdx ? -1 : selectedX ?? -1,
+                                  selectedY === colIdx ? -1 : selectedY ?? -1
+                                )
+                              }
+                            }}
+                          >
+                            <option value="">Sin asignar</option>
+                            <option value="x">Este (X)</option>
+                            <option value="y">Norte (Y)</option>
+                          </select>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {context.parsedData.slice(0, 8).map((row, rowIdx) => (
+                      <tr key={rowIdx}>
+                        {row.map((cell, colIdx) => (
+                          <td key={colIdx} className="p-2 border-t text-center">
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {context.parsedData.length > 8 && (
                   <div className="text-xs text-muted-foreground mt-1">
-                    ... y {context.parsedData.length - 5} filas más
+                    ... y {context.parsedData.length - 8} filas más
                   </div>
                 )}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">
-                    Columna X (Este)
-                  </label>
-                  <select
-                    className="w-full mt-1 p-2 border rounded-md"
-                    onChange={(e) => {
-                      const xColumn = parseInt(e.target.value)
-                      if (context.columnMapping.y !== null) {
-                        handleMapColumns(xColumn, context.columnMapping.y)
-                      }
-                    }}
-                  >
-                    <option value="">Selecciona columna X</option>
-                    {context.parsedData[0]?.map((_, index) => (
-                      <option key={index} value={index}>
-                        Columna {index + 1}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">
-                    Columna Y (Norte)
-                  </label>
-                  <select
-                    className="w-full mt-1 p-2 border rounded-md"
-                    onChange={(e) => {
-                      const yColumn = parseInt(e.target.value)
-                      if (context.columnMapping.x !== null) {
-                        handleMapColumns(context.columnMapping.x, yColumn)
-                      }
-                    }}
-                  >
-                    <option value="">Selecciona columna Y</option>
-                    {context.parsedData[0]?.map((_, index) => (
-                      <option key={index} value={index}>
-                        Columna {index + 1}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={handleReset}>
                   <RotateCcw className="h-4 w-4 mr-2" />
@@ -275,6 +288,10 @@ export function UTMConverter() {
     }
 
     if (isParameterInput || isReadyToConvert) {
+      // Verificar si todos los parámetros están configurados
+      const allParametersConfigured =
+        context.utmZone !== null && context.hemisphere !== null
+
       return (
         <Card className="w-full max-w-4xl mx-auto">
           <CardHeader>
@@ -341,7 +358,7 @@ export function UTMConverter() {
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Reiniciar
                 </Button>
-                {isReadyToConvert && (
+                {allParametersConfigured && (
                   <Button onClick={handleConvertCoordinates}>
                     <Upload className="h-4 w-4 mr-2" />
                     Convertir Coordenadas

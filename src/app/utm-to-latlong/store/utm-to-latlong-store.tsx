@@ -1,4 +1,5 @@
 import { assign, createMachine, fromPromise } from 'xstate'
+import proj4 from 'proj4'
 
 // Tipos TypeScript
 interface UTMCoordinate {
@@ -187,13 +188,20 @@ export const utmConverterMachine = createMachine({
                 y: event.yColumn,
               }),
             }),
-            guard: ({ event }) => {
-              return (
-                event.xColumn !== event.yColumn &&
-                event.xColumn >= 0 &&
-                event.yColumn >= 0
-              )
-            },
+            guard: ({ event }) =>
+              event.xColumn !== event.yColumn &&
+              event.xColumn !== null &&
+              event.yColumn !== null &&
+              event.xColumn >= 0 &&
+              event.yColumn >= 0,
+          },
+          {
+            actions: assign({
+              columnMapping: ({ event }) => ({
+                x: event.xColumn,
+                y: event.yColumn,
+              }),
+            }),
           },
         ],
         RESET: {
@@ -450,19 +458,67 @@ function convertUTMToLatLng(
   utm: UTMCoordinate,
   format: 'decimal' | 'dms'
 ): LatLngCoordinate {
-  // Aquí iría la implementación real de conversión UTM a Lat/Lng
-  // Por ahora retorno valores simulados
-  const lat = 40.7128 + (Math.random() - 0.5) * 0.01
-  const lng = -74.006 + (Math.random() - 0.5) * 0.01
+  try {
+    // Validar parámetros de entrada
+    if (!utm.zone || utm.zone < 1 || utm.zone > 60) {
+      throw new Error(
+        `Zona UTM inválida: ${utm.zone}. Debe estar entre 1 y 60.`
+      )
+    }
 
-  const result: LatLngCoordinate = { lat, lng }
+    if (!['N', 'S'].includes(utm.hemisphere)) {
+      throw new Error(
+        `Hemisferio inválido: ${utm.hemisphere}. Debe ser 'N' o 'S'.`
+      )
+    }
 
-  if (format === 'dms') {
-    result.latDMS = decimalToDMS(lat, 'lat')
-    result.lngDMS = decimalToDMS(lng, 'lng')
+    // Definir el sistema de coordenadas UTM
+    const utmProj = `+proj=utm +zone=${utm.zone} +datum=WGS84 +units=m +no_defs`
+
+    // Si es hemisferio sur, agregar +south
+    const utmProjWithHemisphere =
+      utm.hemisphere === 'S' ? `${utmProj} +south` : utmProj
+
+    // Sistema de coordenadas de destino (WGS84 en grados decimales)
+    const wgs84Proj = '+proj=longlat +datum=WGS84 +no_defs'
+
+    // Realizar la transformación
+    const [lng, lat] = proj4(utmProjWithHemisphere, wgs84Proj, [utm.x, utm.y])
+
+    // Validar resultados
+    if (isNaN(lat) || isNaN(lng)) {
+      throw new Error(
+        'Error en la conversión: coordenadas resultantes inválidas'
+      )
+    }
+
+    if (lat < -90 || lat > 90) {
+      throw new Error('Latitud resultante fuera del rango válido (-90 a 90)')
+    }
+
+    if (lng < -180 || lng > 180) {
+      throw new Error('Longitud resultante fuera del rango válido (-180 a 180)')
+    }
+
+    const result: LatLngCoordinate = {
+      lat: Number(lat.toFixed(8)),
+      lng: Number(lng.toFixed(8)),
+    }
+
+    // Agregar formato DMS si se solicita
+    if (format === 'dms') {
+      result.latDMS = decimalToDMS(lat, 'lat')
+      result.lngDMS = decimalToDMS(lng, 'lng')
+    }
+
+    return result
+  } catch (error) {
+    throw new Error(
+      `Error en conversión UTM a Lat/Lng: ${
+        error instanceof Error ? error.message : 'Error desconocido'
+      }`
+    )
   }
-
-  return result
 }
 
 function decimalToDMS(decimal: number, type: 'lat' | 'lng'): string {
