@@ -32,7 +32,7 @@ export function detectAndRemoveHeaders(data: string[][]): string[][] {
  * Formatea los datos convertidos para el portapapeles
  * @param data - Datos convertidos
  * @param datum - Datum de salida
- * @returns String formateado para CSV
+ * @returns String formateado para Excel
  */
 export function formatForClipboard(
   data: ConversionRow[],
@@ -63,8 +63,8 @@ export function formatForClipboard(
       row.converted.datum,
     ]
 
-    return baseRow.join(',')
+    return baseRow.join('\t')
   })
 
-  return [headers.join(','), ...rows].join('\n')
+  return [headers.join('\t'), ...rows].join('\n')
 }
