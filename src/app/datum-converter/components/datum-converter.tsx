@@ -618,21 +618,6 @@ export function DatumConverter() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      {/* Header con estado actual */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Conversor de Datum UTM</h1>
-          <p className="text-muted-foreground">
-            Convierte coordenadas UTM de un datum a otro (WGS84 ↔ PSAD56)
-          </p>
-        </div>
-        <Badge variant="outline" className="capitalize">
-          {state.value as string}
-        </Badge>
-      </div>
-
-      <Separator />
-
       {/* Contenido principal */}
       {renderCurrentState()}
     </div>
