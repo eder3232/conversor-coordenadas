@@ -30,11 +30,13 @@ export function detectAndRemoveHeaders(data: string[][]): string[][] {
  * Formatea los datos convertidos para el portapapeles
  * @param data - Datos convertidos
  * @param datum - Datum de salida
+ * @param decimals - Número de decimales para formatear los valores
  * @returns String formateado para Excel
  */
 export function formatForClipboard(
   data: ConversionRow[],
-  datum: 'WGS84' | 'PSAD56'
+  datum: 'WGS84' | 'PSAD56',
+  decimals: number = 2
 ): string {
   if (data.length === 0) return ''
 
@@ -53,18 +55,24 @@ export function formatForClipboard(
   // Crear filas de datos
   const rows = data.map((row) => {
     const baseRow = [
-      row.utm.x.toString(),
-      row.utm.y.toString(),
+      row.utm.x.toFixed(decimals),
+      row.utm.y.toFixed(decimals),
       row.utm.zone.toString(),
       row.utm.hemisphere,
       row.utm.datum,
-      row.converted.x.toString(),
-      row.converted.y.toString(),
+      row.converted.x.toFixed(decimals),
+      row.converted.y.toFixed(decimals),
       row.converted.datum,
     ]
 
     return baseRow.join('\t')
   })
 
-  return [headers.join('\t'), ...rows].join('\n')
+  const csvData = [headers.join('\t'), ...rows].join('\n')
+
+  console.log('Datos que se copiarán al clipboard:', csvData)
+
+  console.log('convertedData antes de copiar:', data)
+
+  return csvData
 }

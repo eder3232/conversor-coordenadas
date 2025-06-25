@@ -37,6 +37,9 @@ interface MachineContext {
   // Metadatos
   totalRows: number
   validRows: number
+
+  // Decimales para el clipboard
+  clipboardDecimals: number
 }
 
 type MachineEvents =
@@ -52,6 +55,7 @@ type MachineEvents =
   | { type: 'RESET' }
   | { type: 'RETRY' }
   | { type: 'CLEAR_ERRORS' }
+  | { type: 'SET_CLIPBOARD_DECIMALS'; decimals: number }
 
 export const datumConverterMachine = createMachine({
   id: 'datumConverter',
@@ -75,6 +79,7 @@ export const datumConverterMachine = createMachine({
     copySuccess: false,
     totalRows: 0,
     validRows: 0,
+    clipboardDecimals: 2,
   },
 
   states: {
@@ -222,7 +227,9 @@ export const datumConverterMachine = createMachine({
         CONVERT_COORDINATES: {
           target: 'converting',
           guard: ({ context }) =>
-            context.utmZone !== null && context.hemisphere !== null,
+            context.utmZone !== null &&
+            context.hemisphere !== null &&
+            context.sourceDatum !== context.targetDatum,
         },
         RESET: {
           target: 'idle',
@@ -293,8 +300,13 @@ export const datumConverterMachine = createMachine({
                 datum: input.sourceDatum,
               }
 
+              console.log('Coordenadas UTM originales:', utm)
+              console.log('Datum destino:', input.targetDatum)
+
               // Convertir coordenadas UTM a UTM con diferente datum
               const converted = convertUTMToUTM(utm, input.targetDatum)
+
+              console.log('Coordenadas UTM convertidas:', converted)
 
               convertedData.push({
                 original: row,
@@ -304,6 +316,7 @@ export const datumConverterMachine = createMachine({
 
               validRows++
             } catch (error) {
+              console.error('Error en conversión:', error)
               convertedData.push({
                 original: row,
                 utm: {
@@ -370,6 +383,11 @@ export const datumConverterMachine = createMachine({
             targetDatum: ({ event }) => event.datum,
           }),
         },
+        SET_CLIPBOARD_DECIMALS: {
+          actions: assign({
+            clipboardDecimals: ({ event }) => event.decimals,
+          }),
+        },
         RESET: {
           target: 'idle',
         },
@@ -381,7 +399,8 @@ export const datumConverterMachine = createMachine({
         src: fromPromise(async ({ input }) => {
           const csvData = formatForClipboard(
             input.convertedData,
-            input.targetDatum
+            input.targetDatum,
+            input.clipboardDecimals
           )
           await navigator.clipboard.writeText(csvData)
         }),

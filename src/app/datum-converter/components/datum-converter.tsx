@@ -108,6 +108,10 @@ export function DatumConverter() {
     send({ type: 'CLEAR_ERRORS' })
   }
 
+  const handleSetClipboardDecimals = (decimals: number) => {
+    send({ type: 'SET_CLIPBOARD_DECIMALS', decimals })
+  }
+
   // Renderizado del estado actual
   const renderCurrentState = () => {
     if (isIdle) {
@@ -516,8 +520,15 @@ export function DatumConverter() {
                         Fila {index + 1}:
                       </span>
                       <span>
-                        X: {row.converted.x.toFixed(2)}, Y:{' '}
-                        {row.converted.y.toFixed(2)}, Zona: {row.converted.zone}
+                        X:{' '}
+                        {row.converted.x.toFixed(
+                          Number(context.clipboardDecimals) || 2
+                        )}
+                        , Y:{' '}
+                        {row.converted.y.toFixed(
+                          Number(context.clipboardDecimals) || 2
+                        )}
+                        , Zona: {row.converted.zone}
                         {row.converted.hemisphere}, Datum: {row.converted.datum}
                       </span>
                     </div>
@@ -525,25 +536,47 @@ export function DatumConverter() {
                 </div>
               </div>
 
-              {/* Botones de acción */}
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={handleReset}>
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Nueva Conversión
-                </Button>
-                <Button onClick={handleCopyToClipboard} disabled={isCopying}>
-                  {isCopying ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Copiando...
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar al Portapapeles
-                    </>
-                  )}
-                </Button>
+              {/* Selector de decimales y botones de acción */}
+              <div className="flex flex-col sm:flex-row gap-2 justify-end items-end sm:items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Decimales:
+                  </span>
+                  <Select
+                    value={context.clipboardDecimals?.toString() || '2'}
+                    onValueChange={(value) =>
+                      handleSetClipboardDecimals(Number(value))
+                    }
+                  >
+                    <SelectTrigger className="w-20 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                      <SelectItem value="6">6</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleReset}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Nueva Conversión
+                  </Button>
+                  <Button onClick={handleCopyToClipboard} disabled={isCopying}>
+                    {isCopying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Copiando...
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copiar al Portapapeles
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Mensaje de éxito al copiar */}
