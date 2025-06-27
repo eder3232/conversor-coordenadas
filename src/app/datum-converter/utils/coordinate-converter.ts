@@ -10,6 +10,27 @@ proj4.defs(
   '+proj=longlat +ellps=intl +towgs84=-279.0,175.0,-379.0,0,0,0,0 +no_defs'
 )
 
+function getUTMEPSGPrecise(
+  zone: number,
+  hemisphere: string,
+  datum: string
+): string {
+  if (datum === 'WGS84') {
+    const baseCode = hemisphere === 'N' ? 32600 : 32700
+    return `EPSG:${baseCode + zone}`
+  } else {
+    // Usar parámetros más precisos según la zona
+    const psadParams =
+      zone <= 18
+        ? '-279.68,175.47,-379.21,-0.16,-0.14,0.18,-0.29'
+        : '-279.0,175.0,-379.0,0,0,0,0'
+
+    return `+proj=utm +zone=${zone} +ellps=intl +towgs84=${psadParams} +units=m +no_defs${
+      hemisphere === 'S' ? ' +south' : ''
+    }`
+  }
+}
+
 // Función para obtener el código EPSG UTM correcto
 function getUTMEPSG(zone: number, hemisphere: string, datum: string): string {
   if (datum === 'WGS84') {
@@ -72,9 +93,12 @@ export function convertUTMToUTM(
     console.log('Datum destino:', targetDatum)
 
     // Obtener las proyecciones UTM correctas
-    const sourceUTMProj = getUTMEPSG(utm.zone, utm.hemisphere, utm.datum)
-    const targetUTMProj = getUTMEPSG(utm.zone, utm.hemisphere, targetDatum)
-
+    const sourceUTMProj = getUTMEPSGPrecise(utm.zone, utm.hemisphere, utm.datum)
+    const targetUTMProj = getUTMEPSGPrecise(
+      utm.zone,
+      utm.hemisphere,
+      targetDatum
+    )
     console.log('Proyecciones UTM (Perú):')
     console.log('Source:', sourceUTMProj)
     console.log('Target:', targetUTMProj)

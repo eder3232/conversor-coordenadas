@@ -339,13 +339,11 @@ export function DatumConverter() {
                       <SelectValue placeholder="Selecciona zona" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 60 }, (_, i) => i + 1).map(
-                        (zone) => (
-                          <SelectItem key={zone} value={zone.toString()}>
-                            Zona {zone}
-                          </SelectItem>
-                        )
-                      )}
+                      {[17, 18, 19].map((zone) => (
+                        <SelectItem key={zone} value={zone.toString()}>
+                          Zona {zone}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
